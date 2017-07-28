@@ -1,0 +1,111 @@
+=================================================
+1 Check disk usage 
+=================================================
+#!/bin/bash
+
+rate=$(df -h | grep "/dev/sda1" | awk '{print $5}' | cut -d "%" -f1)
+
+if [ $rate -ge 80 ]
+        then
+                echo "/dev/sda1 is full !!!"
+        else
+                echo "/dev/sda1 is NOT full !!!"
+fi
+
+
+===================================================
+2 Backup /etc directory
+===================================================
+
+#!/bin/bash
+
+ntpdate 0.ca.pool.ntp.org &>/dev/null
+
+date=$(date +%y%m%d)
+
+size=$(du -sh /etc)
+
+if [ -d /tmp/dbback ]
+        then
+                echo "Date is $date" > /tmp/dbback/dbinfo.txt
+                echo "Size is $size" >> /tmp/dbback/dbinfo.txt
+                cd /tmp/dbback
+                tar -zcf etc_$date.tar.gz /etc dbinfo.txt &>/dev/null
+                rm -rf /tmp/dbback/dbinfo.txt
+
+        else
+                mkdir /tmp/dbback
+                echo "Date is $date" > /tmp/dbback/dbinfo.txt
+                echo "Size is $size" >> /tmp/dbback/dbinfo.txt
+                cd /tmp/dbback
+                tar -zcf etc_$date.tar.gz /etc dbinfo.txt &>/dev/null
+                rm -rf /tmp/dbback/dbinfo.txt
+fi
+
+
+=====================================================
+3 Monitoring Apache server working status
+=====================================================
+
+#!/bin/bash
+
+port=$(nmap -sT 192.168.0.107 | grep tcp | grep http$ | awk '{print $2}')
+
+if [ "$port" == "open" ]
+        then
+                echo "$(date) httpd is ok !!! " >> /tmp/httpd_acc.log
+        else
+                /bin/systemctl restart httpd.service &>/dev/null
+                echo "$(date) httpd reboot !!!" >> /tmp/httpd_error.log
+fi
+
+
+
+=====================================================
+4 Identify a file or directory
+=====================================================
+
+#!/bin/bash
+
+read -p "Please input a file name:" file
+
+if [ -z "$file" ]
+        then
+                echo "Error, please input a file name"
+                exit 1
+
+elif [ ! -e "$file" ]
+        then
+                echo "This file or directory dose not exist at all!"
+                exit 2
+
+elif [ -f "$file" ]
+        then
+                echo "$file is a regulare file."
+
+elif [ -d "$file" ]
+        then
+                echo "$file is a directory."
+
+else
+        echo "$file is an other file."
+
+fi
+
+
+=======================================
+5 tar a banch of files
+=======================================
+
+#!/bin/bash
+
+cd /home/kiosk/sh/tarfile
+ls *.tar.gz >ls.log
+for i in $(cat ls.log)
+        do
+                tar -zxf $i &>/dev/null
+        done
+
+rm -rf /home/kiosk/sh/tarfile/ls.log
+
+
